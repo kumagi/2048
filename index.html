@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080a0f">
+  <meta name="description" content="さまざまなAIエージェントが作った2048を、見比べてそのまま遊べるショーケース。">
+  <title>2048 / AI EDITIONS</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f5f2e9;
+      --muted: #a5a49f;
+      --line: rgba(255, 255, 255, .12);
+      --panel: rgba(19, 21, 27, .76);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 84% 3%, rgba(236, 105, 54, .2), transparent 27rem),
+        radial-gradient(circle at 9% 35%, rgba(58, 178, 190, .13), transparent 30rem),
+        #080a0f;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .23;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+    }
+    a { color: inherit; }
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 76px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 850; letter-spacing: -.04em; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      aspect-ratio: 1;
+      border: 1px solid rgba(255, 255, 255, .28);
+      border-radius: 8px;
+      background: linear-gradient(145deg, #f0a33a, #ea5839);
+      color: #130d09;
+      font-size: 11px;
+      box-shadow: 0 0 22px rgba(238, 101, 54, .22);
+    }
+    .repo-link { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: .04em; }
+    .repo-link:hover { color: var(--ink); }
+    .hero { padding: clamp(68px, 10vw, 130px) 0 70px; }
+    .eyebrow { margin: 0 0 22px; color: #f3a048; font: 700 12px/1 monospace; letter-spacing: .18em; }
+    h1 { margin: 0; max-width: 940px; font-size: clamp(56px, 10vw, 132px); line-height: .84; letter-spacing: -.075em; }
+    h1 em { color: transparent; -webkit-text-stroke: 1px rgba(245, 242, 233, .55); font-style: normal; }
+    .hero-foot {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 32px;
+      align-items: end;
+      margin-top: 42px;
+    }
+    .intro { max-width: 590px; margin: 0; color: var(--muted); font-size: clamp(15px, 2vw, 18px); line-height: 1.85; }
+    .count { color: var(--muted); font: 650 12px/1.5 monospace; letter-spacing: .12em; text-align: right; }
+    .count strong { display: block; color: var(--ink); font: 800 36px/1 sans-serif; letter-spacing: -.05em; }
+    .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+    .section-head h2 { margin: 0; font-size: 13px; letter-spacing: .14em; }
+    .section-head span { color: var(--muted); font: 11px monospace; }
+    .games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; padding-bottom: 110px; }
+    .game-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 490px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: 0 28px 70px rgba(0, 0, 0, .25);
+      isolation: isolate;
+      transition: transform .35s ease, border-color .35s ease, box-shadow .35s ease;
+    }
+    .game-card:hover {
+      transform: translateY(-7px);
+      border-color: hsla(var(--card-hue), 80%, 68%, .5);
+      box-shadow: 0 32px 80px rgba(0, 0, 0, .42), 0 0 35px hsla(var(--card-hue), 70%, 50%, .1);
+    }
+    .preview { position: relative; height: 310px; overflow: hidden; background: #101218; }
+    .preview iframe {
+      width: 150%;
+      height: 150%;
+      border: 0;
+      pointer-events: none;
+      transform: scale(.667);
+      transform-origin: top left;
+      filter: saturate(.9);
+    }
+    .preview-shade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 55%, rgba(12, 14, 19, .94));
+    }
+    .card-copy { position: relative; z-index: 1; padding: 2px 25px 26px; }
+    .card-meta { display: flex; justify-content: space-between; color: var(--muted); font: 10px/1 monospace; letter-spacing: .12em; }
+    .live-dot { color: hsl(var(--card-hue), 75%, 68%); }
+    .live-dot::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; }
+    .card-copy h2 { margin: 16px 0 8px; font-size: clamp(24px, 3vw, 34px); line-height: 1.08; letter-spacing: -.04em; }
+    .card-copy p { margin: 0; color: var(--muted); font: 11px/1.4 monospace; }
+    .play-label { display: inline-flex; gap: 10px; margin-top: 25px; color: hsl(var(--card-hue), 75%, 72%); font-size: 13px; font-weight: 750; }
+    .card-link { position: absolute; z-index: 4; inset: 0; border-radius: inherit; }
+    .card-link:focus-visible { outline: 3px solid hsl(var(--card-hue), 78%, 67%); outline-offset: -4px; }
+    footer { display: flex; justify-content: space-between; gap: 20px; padding: 30px 0 45px; border-top: 1px solid var(--line); color: var(--muted); font: 11px/1.5 monospace; letter-spacing: .08em; }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 24px, 580px); }
+      .hero { padding-top: 58px; }
+      .hero-foot { grid-template-columns: 1fr; }
+      .count { text-align: left; }
+      .games { grid-template-columns: 1fr; }
+      .game-card { min-height: 450px; }
+      .preview { height: 280px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .game-card { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header shell">
+    <div class="brand"><span class="brand-mark">2²</span><span>2048 / LAB</span></div>
+    <a class="repo-link" href="https://github.com/kumagi/2048">GitHub <span aria-hidden="true">↗</span></a>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">MULTI-AGENT EXPERIMENT / 2026</p>
+      <h1>ONE GAME.<br><em>MANY MINDS.</em></h1>
+      <div class="hero-foot">
+        <p class="intro">同じ「2048」というお題から、AIエージェントたちはどこまで違うゲームを作るのか。気になるエディションを選んで、そのままプレイできます。</p>
+        <div class="count"><strong>03</strong>PLAYABLE EDITIONS</div>
+      </div>
+    </section>
+    <div class="section-head"><h2>CHOOSE YOUR EDITION</h2><span>CLICK TO LAUNCH</span></div>
+    <section class="games" aria-label="2048ゲーム一覧">
+      <article class="game-card" style="--card-hue:276deg">
+          <div class="preview" aria-hidden="true">
+            <iframe src="GLM-5.3-flash/index.html" loading="lazy" tabindex="-1" title="2048 NEON SPLASH – ド派手エフェクト版のプレビュー"></iframe>
+            <div class="preview-shade"></div>
+          </div>
+          <div class="card-copy">
+            <div class="card-meta"><span>EDITION 01</span><span class="live-dot">PLAYABLE</span></div>
+            <h2>2048 NEON SPLASH – ド派手エフェクト版</h2>
+            <p>GLM-5.3-flash</p>
+            <span class="play-label">この2048で遊ぶ <span aria-hidden="true">↗</span></span>
+          </div>
+          <a class="card-link" href="GLM-5.3-flash/index.html" aria-label="2048 NEON SPLASH – ド派手エフェクト版で遊ぶ"></a>
+        </article>
+<article class="game-card" style="--card-hue:248deg">
+          <div class="preview" aria-hidden="true">
+            <iframe src="MuseSpark1.3/index.html" loading="lazy" tabindex="-1" title="FEVER 2048 — ド派手エフェクト2048のプレビュー"></iframe>
+            <div class="preview-shade"></div>
+          </div>
+          <div class="card-copy">
+            <div class="card-meta"><span>EDITION 02</span><span class="live-dot">PLAYABLE</span></div>
+            <h2>FEVER 2048 — ド派手エフェクト2048</h2>
+            <p>MuseSpark1.3</p>
+            <span class="play-label">この2048で遊ぶ <span aria-hidden="true">↗</span></span>
+          </div>
+          <a class="card-link" href="MuseSpark1.3/index.html" aria-label="FEVER 2048 — ド派手エフェクト2048で遊ぶ"></a>
+        </article>
+<article class="game-card" style="--card-hue:196deg">
+          <div class="preview" aria-hidden="true">
+            <iframe src="Qwen3.8-next-flash/index.html" loading="lazy" tabindex="-1" title="2048 FX — ド派手エフェクト2048のプレビュー"></iframe>
+            <div class="preview-shade"></div>
+          </div>
+          <div class="card-copy">
+            <div class="card-meta"><span>EDITION 03</span><span class="live-dot">PLAYABLE</span></div>
+            <h2>2048 FX — ド派手エフェクト2048</h2>
+            <p>Qwen3.8-next-flash</p>
+            <span class="play-label">この2048で遊ぶ <span aria-hidden="true">↗</span></span>
+          </div>
+          <a class="card-link" href="Qwen3.8-next-flash/index.html" aria-label="2048 FX — ド派手エフェクト2048で遊ぶ"></a>
+        </article>
+    </section>
+  </main>
+  <footer class="shell"><span>2048 / AI EDITIONS</span><span>BUILT BY MANY MINDS</span></footer>
+</body>
+</html>
